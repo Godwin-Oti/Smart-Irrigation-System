@@ -5,6 +5,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dotenv import load_dotenv
 
+
+# Load environment variables
+load_dotenv()
 # Function to connect to the Database
 def get_connection():
     try:
