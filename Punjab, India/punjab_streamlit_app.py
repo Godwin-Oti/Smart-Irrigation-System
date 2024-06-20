@@ -86,5 +86,5 @@ def main():
         st.write(irrigation_needs)
 
 # Run the Streamlit app
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+    #main()
