@@ -19,14 +19,14 @@ def get_connection():
         return None
 
 # Function to fetch historical data for a specific feature
-def get_historical_data(engine, feature):
-    query = f"SELECT date, {feature} FROM historical_data;"
-    try:
-        df = pd.read_sql_query(query, engine)
-        return df
-    except Exception as e:
-        st.error(f"Error fetching historical data: {str(e)}")
-        return pd.DataFrame()
+#def get_historical_data(engine, feature):
+    #query = f"SELECT date, {feature} FROM historical_data;"
+    #try:
+        #df = pd.read_sql_query(query, engine)
+        #return df
+    #except Exception as e:
+        #st.error(f"Error fetching historical data: {str(e)}")
+        #return pd.DataFrame()
 
 # Function to fetch future data for a specific feature
 def get_future_data(engine, feature):
@@ -64,12 +64,12 @@ def main():
     feature_selected = st.sidebar.selectbox('Select Feature', ['temperature_2m (°C)', 'precipitation (mm)', 'ET₀ (mm)'])
 
     # Historical data visualization
-    st.header('Historical Data')
-    historical_data = get_historical_data(engine, feature_selected)
-    if not historical_data.empty:
-        fig_hist = px.line(historical_data, x='date', y=feature_selected,
-                           title=f'Historical {feature_selected}')
-        st.plotly_chart(fig_hist)
+    #st.header('Historical Data')
+    #historical_data = get_historical_data(engine, feature_selected)
+    #if not historical_data.empty:
+        #fig_hist = px.line(historical_data, x='date', y=feature_selected,
+                           #title=f'Historical {feature_selected}')
+        #st.plotly_chart(fig_hist)
 
     # Future data visualization
     st.header('Future Data')
