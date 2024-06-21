@@ -16,7 +16,7 @@ def get_connection():
 
 # Function to fetch historical data for a specific feature
 def get_historical_data(engine, feature):
-    query = f"SELECT date, {feature} FROM historical_data;"
+    query = f"SELECT date, {feature} FROM Historical_Data;"
     try:
         df = pd.read_sql_query(query, engine)
         return df
@@ -26,7 +26,7 @@ def get_historical_data(engine, feature):
 
 # Function to fetch future data for a specific feature
 def get_future_data(engine, feature):
-    query = f"SELECT date, {feature} FROM future_data;"
+    query = f"SELECT date, {feature} FROM Future_Data;"
     try:
         df = pd.read_sql_query(query, engine)
         return df
@@ -46,7 +46,7 @@ def get_irrigation_needs(engine, crop):
 
 # Main Streamlit app
 def main():
-    st.title('Crop Irrigation Dashboard')
+    st.title('Enviromental Condition & Crop Irrigation Dashboard')
 
     # Connect to PostgreSQL database
     engine = get_connection()
@@ -56,11 +56,15 @@ def main():
     # Sidebar for crop selection
     crop_selected = st.sidebar.selectbox('Select Crop', ['Wheat', 'Rice', 'Maize'])
 
-    # Sidebar for selecting data feature (e.g., temperature, precipitation, ET₀)
-    feature_selected = st.sidebar.selectbox('Select Feature', ['temperature_2m (°C)', 'precipitation (mm)', 'ET₀ (mm)'])
+    # Sidebar for selecting data feature
+    feature_selected = st.sidebar.selectbox('Select Feature', [
+        'temperature_2m_C', 'relative_humidity_2m', 'precipitation_mm', 
+        'ET0_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_C', 
+        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
+    ])
 
     # Historical data visualization
-    st.header('Historical Data')
+    st.header('4 Years Historical Data')
     historical_data = get_historical_data(engine, feature_selected)
     if not historical_data.empty:
         fig_hist = px.line(historical_data, x='date', y=feature_selected,
@@ -68,7 +72,7 @@ def main():
         st.plotly_chart(fig_hist)
 
     # Future data visualization
-    st.header('Future Data')
+    st.header('6 Months Future Data')
     future_data = get_future_data(engine, feature_selected)
     if not future_data.empty:
         fig_future = px.line(future_data, x='date', y=feature_selected,
