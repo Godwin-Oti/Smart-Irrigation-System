@@ -64,15 +64,15 @@ def main():
 
     # Sidebar for selecting data feature
     feature_selected = st.sidebar.selectbox('Select Feature', [
-        'temperature_2m_C', 'relative_humidity_2m', 'precipitation_mm', 
-        'ET0_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_C', 
+        'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
+        'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
         'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
     ])
 
     # Historical data visualization
     st.header('4 Years Historical Data')
     historical_data = get_historical_data(engine, feature_selected)
-    st.write("Historical Data Columns:", historical_data.columns)
+    #st.write("Historical Data Columns:", historical_data.columns)
     st.write("Historical Data Shape:", historical_data.shape)
     if not historical_data.empty:
         fig_hist = px.line(historical_data, x='date', y=feature_selected,
@@ -82,7 +82,7 @@ def main():
     # Future data visualization
     st.header('6 Months Future Data')
     future_data = get_future_data(engine, feature_selected)
-    st.write("Future Data Columns:", future_data.columns)
+    #st.write("Future Data Columns:", future_data.columns)
     st.write("Future Data Shape:", future_data.shape)
     if not future_data.empty:
         fig_future = px.line(future_data, x='date', y=feature_selected,
@@ -92,7 +92,7 @@ def main():
     # Irrigation needs tabular display
     st.header('Irrigation Needs')
     irrigation_needs = get_irrigation_needs(engine, crop_selected)
-    st.write("Irrigation Needs Data Columns:", irrigation_needs.columns)
+    #st.write("Irrigation Needs Data Columns:", irrigation_needs.columns)
     st.write("Irrigation Needs Data Shape:", irrigation_needs.shape)
     if not irrigation_needs.empty:
         st.write(irrigation_needs)
