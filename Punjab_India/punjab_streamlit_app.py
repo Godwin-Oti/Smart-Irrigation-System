@@ -19,6 +19,8 @@ def get_historical_data(engine, feature):
     query = f"SELECT date, {feature} FROM Historical_Data;"
     try:
         df = pd.read_sql_query(query, engine)
+        if df.empty:
+            st.warning(f"No historical data found for feature: {feature}")
         return df
     except Exception as e:
         st.error(f"Error fetching historical data: {str(e)}")
@@ -29,6 +31,8 @@ def get_future_data(engine, feature):
     query = f"SELECT date, {feature} FROM Future_Data;"
     try:
         df = pd.read_sql_query(query, engine)
+        if df.empty:
+            st.warning(f"No future data found for feature: {feature}")
         return df
     except Exception as e:
         st.error(f"Error fetching future data: {str(e)}")
@@ -39,6 +43,8 @@ def get_irrigation_needs(engine, crop):
     query = f"SELECT * FROM {crop.lower()}_irrigation_need;"
     try:
         df = pd.read_sql_query(query, engine)
+        if df.empty:
+            st.warning(f"No irrigation needs data found for crop: {crop}")
         return df
     except Exception as e:
         st.error(f"Error fetching irrigation needs data: {str(e)}")
@@ -46,7 +52,7 @@ def get_irrigation_needs(engine, crop):
 
 # Main Streamlit app
 def main():
-    st.title('Enviromental Condition & Crop Irrigation Dashboard')
+    st.title('Environmental Condition & Crop Irrigation Dashboard')
 
     # Connect to PostgreSQL database
     engine = get_connection()
@@ -66,6 +72,8 @@ def main():
     # Historical data visualization
     st.header('4 Years Historical Data')
     historical_data = get_historical_data(engine, feature_selected)
+    st.write("Historical Data Columns:", historical_data.columns)
+    st.write("Historical Data Shape:", historical_data.shape)
     if not historical_data.empty:
         fig_hist = px.line(historical_data, x='date', y=feature_selected,
                            title=f'Historical {feature_selected}')
@@ -74,6 +82,8 @@ def main():
     # Future data visualization
     st.header('6 Months Future Data')
     future_data = get_future_data(engine, feature_selected)
+    st.write("Future Data Columns:", future_data.columns)
+    st.write("Future Data Shape:", future_data.shape)
     if not future_data.empty:
         fig_future = px.line(future_data, x='date', y=feature_selected,
                              title=f'Projected {feature_selected}')
@@ -82,6 +92,8 @@ def main():
     # Irrigation needs tabular display
     st.header('Irrigation Needs')
     irrigation_needs = get_irrigation_needs(engine, crop_selected)
+    st.write("Irrigation Needs Data Columns:", irrigation_needs.columns)
+    st.write("Irrigation Needs Data Shape:", irrigation_needs.shape)
     if not irrigation_needs.empty:
         st.write(irrigation_needs)
 
