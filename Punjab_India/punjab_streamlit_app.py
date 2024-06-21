@@ -51,8 +51,8 @@ def get_irrigation_needs(engine, crop):
         return pd.DataFrame()
 
 # Function to create a line chart for irrigation needs
-def plot_irrigation_needs(data):
-    fig = px.line(data, x='date', y='irrigation_amount', title='Irrigation Needs Over Time')
+def plot_irrigation_needs(data, crop):
+    fig = px.line(data, x='date', y='irrigation_amount', title=f'Irrigation Needs Over Time for {crop}')
     return fig
 
 # Main Streamlit app
@@ -94,7 +94,7 @@ def main():
     st.header('Irrigation Needs')
     irrigation_needs = get_irrigation_needs(engine, crop_selected)
     if not irrigation_needs.empty:
-        fig_irrigation_needs = plot_irrigation_needs(irrigation_needs)
+        fig_irrigation_needs = plot_irrigation_needs(irrigation_needs, crop_selected)
         st.plotly_chart(fig_irrigation_needs)
         st.write("Irrigation Needs Data Shape:", irrigation_needs.shape)
         st.write(irrigation_needs)
