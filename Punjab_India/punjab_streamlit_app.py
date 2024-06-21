@@ -50,6 +50,11 @@ def get_irrigation_needs(engine, crop):
         st.error(f"Error fetching irrigation needs data: {str(e)}")
         return pd.DataFrame()
 
+# Function to create a line chart for irrigation needs
+def plot_irrigation_needs(data):
+    fig = px.line(data, x='date', y='irrigation_need', title='Irrigation Needs Over Time')
+    return fig
+
 # Main Streamlit app
 def main():
     st.title('Environmental Condition & Crop Irrigation Dashboard')
@@ -72,8 +77,6 @@ def main():
     # Historical data visualization
     st.header('4 Years Historical Data')
     historical_data = get_historical_data(engine, feature_selected)
-    #st.write("Historical Data Columns:", historical_data.columns)
-    st.write("Historical Data Shape:", historical_data.shape)
     if not historical_data.empty:
         fig_hist = px.line(historical_data, x='date', y=feature_selected,
                            title=f'Historical {feature_selected}')
@@ -82,19 +85,18 @@ def main():
     # Future data visualization
     st.header('6 Months Future Data')
     future_data = get_future_data(engine, feature_selected)
-    #st.write("Future Data Columns:", future_data.columns)
-    st.write("Future Data Shape:", future_data.shape)
     if not future_data.empty:
         fig_future = px.line(future_data, x='date', y=feature_selected,
                              title=f'Projected {feature_selected}')
         st.plotly_chart(fig_future)
 
-    # Irrigation needs tabular display
+    # Irrigation needs visualization
     st.header('Irrigation Needs')
     irrigation_needs = get_irrigation_needs(engine, crop_selected)
-    #st.write("Irrigation Needs Data Columns:", irrigation_needs.columns)
-    st.write("Irrigation Needs Data Shape:", irrigation_needs.shape)
     if not irrigation_needs.empty:
+        fig_irrigation_needs = plot_irrigation_needs(irrigation_needs)
+        st.plotly_chart(fig_irrigation_needs)
+        st.write("Irrigation Needs Data Shape:", irrigation_needs.shape)
         st.write(irrigation_needs)
 
 # Run the Streamlit app
