@@ -28,7 +28,7 @@ def get_historical_data(engine, feature):
 
 # Function to fetch future data for a specific feature
 def get_future_data(engine, feature):
-    query = f"SELECT date, {feature} FROM Future_Data;"
+    query = f"SELECT date, {feature} FROM Present_with_forecast;"
     try:
         df = pd.read_sql_query(query, engine)
         if df.empty:
@@ -72,6 +72,7 @@ def main():
         'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
         'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
         'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
+        'soil_moisture_lag1'
     ])
 
     # Historical data visualization
@@ -83,7 +84,7 @@ def main():
         st.plotly_chart(fig_hist)
 
     # Future data visualization
-    st.header('6 Months Future Data')
+    st.header('6 Months Data With Forecast')
     future_data = get_future_data(engine, feature_selected)
     if not future_data.empty:
         fig_future = px.line(future_data, x='date', y=feature_selected,
