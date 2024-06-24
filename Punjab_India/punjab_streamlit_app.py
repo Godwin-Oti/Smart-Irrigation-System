@@ -65,7 +65,7 @@ def main():
         return
 
     # Sidebar for crop selection
-    crop_selected = st.sidebar.selectbox('Select Crop', ['Wheat', 'Rice', 'Maize'])
+    crop_selected = st.sidebar.selectbox('Select Crop', ['Wheat', 'Rice', 'Maize','Sugarcane', 'Cotton', 'Barley', 'Potatoes', 'Pulses'])
 
     # Sidebar for selecting data feature
     feature_selected = st.sidebar.selectbox('Select Feature', [
