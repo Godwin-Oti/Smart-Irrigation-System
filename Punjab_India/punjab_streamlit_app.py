@@ -52,7 +52,7 @@ def get_irrigation_needs(engine, crop):
 
 # Function to create a line chart for irrigation needs
 def plot_irrigation_needs(data, crop):
-    fig = px.line(data, x='date', y='irrigation_amount', title=f'Irrigation Needs Over Time for {crop}')
+    fig = px.line(data, x='date', y='irrigation_amount_mm', title=f'Irrigation Needs Over Time for {crop}')
     return fig
 
 # Main Streamlit app
