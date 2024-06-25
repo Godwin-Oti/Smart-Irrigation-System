@@ -71,13 +71,26 @@ def main():
     feature_selected = st.sidebar.selectbox('Select Feature', [
         'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
         'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
-        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
+        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2',
+        'soil_moisture_lag1'
     ])
 
     # Historical data visualization
     st.header('4 Years Historical Data')
     historical_data = get_historical_data(engine, feature_selected)
+    
     if not historical_data.empty:
+        # Check for duplicate dates
+        if historical_data.duplicated(subset='date').any():
+            st.warning("Duplicate dates found in historical data.")
+
+        # Ensure the date column is datetime type
+        historical_data['date'] = pd.to_datetime(historical_data['date'])
+
+        # Sort data by date
+        historical_data = historical_data.sort_values(by='date')
+
+        # Plot the data
         fig_hist = go.Figure()
         fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[feature_selected],
                                       mode='lines',
@@ -86,14 +99,22 @@ def main():
             title=f'Historical {feature_selected}',
             xaxis_title='Date',
             yaxis_title=feature_selected,
-            template='plotly_white'  # Change template to a light theme
+            template='plotly_white'
         )
         st.plotly_chart(fig_hist)
 
     # Future data visualization
     st.header('6 Months Data With Forecast')
     future_data = get_future_data(engine, feature_selected)
+    
     if not future_data.empty:
+        # Ensure the date column is datetime type
+        future_data['date'] = pd.to_datetime(future_data['date'])
+
+        # Sort data by date
+        future_data = future_data.sort_values(by='date')
+
+        # Plot the data
         fig_future = go.Figure()
         fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[feature_selected],
                                         mode='lines',
@@ -102,7 +123,7 @@ def main():
             title=f'Projected {feature_selected}',
             xaxis_title='Date',
             yaxis_title=feature_selected,
-            template='plotly_white'  # Change template to a light theme
+            template='plotly_white'
         )
         st.plotly_chart(fig_future)
 
