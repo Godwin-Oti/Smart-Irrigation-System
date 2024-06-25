@@ -2,6 +2,7 @@ import streamlit as st
 from sqlalchemy import create_engine
 import pandas as pd
 import plotly.express as px
+from datetime import datetime, timedelta
 
 # Function to connect to the Database
 def get_connection():
@@ -70,8 +71,7 @@ def main():
     feature_selected = st.sidebar.selectbox('Select Feature', [
         'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
         'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
-        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2',
-        'soil_moisture_lag1'
+        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
     ])
 
     # Historical data visualization
@@ -104,11 +104,15 @@ def main():
         
         # Add Alerts
         st.subheader("Irrigation Alerts")
+        today = datetime.today().date()
+        tomorrow = today + timedelta(days=1)
         for index, row in irrigation_needs.iterrows():
-            if row['irrigation_amount_mm'] > 0:
-                st.warning(f"Irrigation needed on {row['date'].date()}: {row['irrigation_amount_mm']} mm of water required")
-            else:
-                st.success(f"No irrigation needed on {row['date'].date()}")
+            irrigation_date = row['date'].date()
+            if irrigation_date == today or irrigation_date == tomorrow:
+                if row['irrigation_amount_mm'] > 0:
+                    st.warning(f"Irrigation needed on {irrigation_date}: {row['irrigation_amount_mm']} mm of water required")
+                else:
+                    st.success(f"No irrigation needed on {irrigation_date}")
 
 # Run the Streamlit app
 if __name__ == '__main__':
