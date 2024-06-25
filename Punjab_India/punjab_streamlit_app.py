@@ -1,7 +1,6 @@
 import streamlit as st
 from sqlalchemy import create_engine
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 
 # Function to connect to the Database
@@ -57,7 +56,7 @@ def plot_irrigation_needs(data, crop):
         return None
     
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data['date'], y=data['irrigation_amount_mm'], mode='lines', line=dict(color='blue'), name=f'Irrigation Needs for {crop}'))
+    fig.add_trace(go.Scatter(x=data['date'], y=data['irrigation_amount_mm'], mode='lines', name=f'Irrigation Needs for {crop}'))
     fig.update_layout(title=f'Irrigation Needs Over Time for {crop}', xaxis_title='Date', yaxis_title='Irrigation Amount (mm)', template='plotly_white')
     return fig
 
@@ -95,11 +94,10 @@ def main():
         # Sort data by date
         historical_data = historical_data.sort_values(by='date')
 
-        # Plot the data
+        # Plot the historical data
         fig_hist = go.Figure()
         fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[feature_selected],
                                       mode='lines',
-                                      line=dict(color='blue'),
                                       name=f'Historical {feature_selected}'))
         fig_hist.update_layout(
             title=f'Historical {feature_selected}',
@@ -119,10 +117,10 @@ def main():
         # Sort data by date
         future_data = future_data.sort_values(by='date')
 
+        # Plot the future data
         fig_future = go.Figure()
         fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[feature_selected],
                                         mode='lines',
-                                        line=dict(color='blue'),
                                         name=f'Projected {feature_selected}'))
         fig_future.update_layout(
             title=f'Projected {feature_selected}',
@@ -139,6 +137,7 @@ def main():
         # Ensure the date column is datetime type
         irrigation_needs['date'] = pd.to_datetime(irrigation_needs['date'])
 
+        # Plot irrigation needs
         fig_irrigation_needs = plot_irrigation_needs(irrigation_needs, crop_selected)
         if fig_irrigation_needs:
             st.plotly_chart(fig_irrigation_needs)
