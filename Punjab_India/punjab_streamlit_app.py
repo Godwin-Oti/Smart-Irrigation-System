@@ -56,7 +56,9 @@ def plot_irrigation_needs(data, crop):
         st.error("The required columns 'date' and 'irrigation_amount_mm' are not present in the data.")
         return None
     
-    fig = px.line(data, x='date', y='irrigation_amount_mm', title=f'Irrigation Needs Over Time for {crop}')
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data['date'], y=data['irrigation_amount_mm'], mode='lines', line=dict(color='blue'), name=f'Irrigation Needs for {crop}'))
+    fig.update_layout(title=f'Irrigation Needs Over Time for {crop}', xaxis_title='Date', yaxis_title='Irrigation Amount (mm)', template='plotly_white')
     return fig
 
 # Main Streamlit app
@@ -75,7 +77,8 @@ def main():
     feature_selected = st.sidebar.selectbox('Select Feature', [
         'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
         'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
-        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
+        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2',
+        'soil_moisture_lag1'
     ])
 
     # Historical data visualization
@@ -96,6 +99,7 @@ def main():
         fig_hist = go.Figure()
         fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[feature_selected],
                                       mode='lines',
+                                      line=dict(color='blue'),
                                       name=f'Historical {feature_selected}'))
         fig_hist.update_layout(
             title=f'Historical {feature_selected}',
@@ -118,6 +122,7 @@ def main():
         fig_future = go.Figure()
         fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[feature_selected],
                                         mode='lines',
+                                        line=dict(color='blue'),
                                         name=f'Projected {feature_selected}'))
         fig_future.update_layout(
             title=f'Projected {feature_selected}',
@@ -131,21 +136,24 @@ def main():
     st.header('Irrigation Needs')
     irrigation_needs = get_irrigation_needs(engine, crop_selected)
     if not irrigation_needs.empty:
+        # Ensure the date column is datetime type
+        irrigation_needs['date'] = pd.to_datetime(irrigation_needs['date'])
+
         fig_irrigation_needs = plot_irrigation_needs(irrigation_needs, crop_selected)
         if fig_irrigation_needs:
             st.plotly_chart(fig_irrigation_needs)
             st.write("Irrigation Needs Data Shape:", irrigation_needs.shape)
             st.write(irrigation_needs)
 
-    # Irrigation alerts for the present and next day
-    st.subheader("Irrigation Alerts")
-    today = pd.Timestamp('today').normalize()
-    upcoming_days = irrigation_needs[(irrigation_needs['date'] >= today) & (irrigation_needs['date'] <= today + pd.Timedelta(days=1))]
-    for index, row in upcoming_days.iterrows():
-        if row['irrigation_amount_mm'] > 0:
-            st.warning(f"Irrigation needed on {row['date'].date()}: {row['irrigation_amount_mm']} mm of water required")
-        else:
-            st.success(f"No irrigation needed on {row['date'].date()}")
+        # Irrigation alerts for the present and next day
+        st.subheader("Irrigation Alerts")
+        today = pd.Timestamp('today').normalize()
+        upcoming_days = irrigation_needs[(irrigation_needs['date'] >= today) & (irrigation_needs['date'] <= today + pd.Timedelta(days=1))]
+        for index, row in upcoming_days.iterrows():
+            if row['irrigation_amount_mm'] > 0:
+                st.warning(f"Irrigation needed on {row['date'].date()}: {row['irrigation_amount_mm']} mm of water required")
+            else:
+                st.success(f"No irrigation needed on {row['date'].date()}")
 
 # Run the Streamlit app
 if __name__ == '__main__':
