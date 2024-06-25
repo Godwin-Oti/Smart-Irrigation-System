@@ -2,7 +2,6 @@ import streamlit as st
 from sqlalchemy import create_engine
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
 # Function to connect to the Database
 def get_connection():
@@ -95,6 +94,9 @@ def main():
     st.header('Irrigation Needs')
     irrigation_needs = get_irrigation_needs(engine, crop_selected)
     if not irrigation_needs.empty:
+        # Convert the date column to datetime
+        irrigation_needs['date'] = pd.to_datetime(irrigation_needs['date'])
+
         fig_irrigation_needs = plot_irrigation_needs(irrigation_needs, crop_selected)
         st.plotly_chart(fig_irrigation_needs)
         st.write("Irrigation Needs Data Shape:", irrigation_needs.shape)
