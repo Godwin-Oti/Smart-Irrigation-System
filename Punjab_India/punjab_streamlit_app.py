@@ -1,7 +1,7 @@
 import streamlit as st
 from sqlalchemy import create_engine
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
 # Function to connect to the Database
@@ -78,41 +78,53 @@ def main():
     st.header('4 Years Historical Data')
     historical_data = get_historical_data(engine, feature_selected)
     if not historical_data.empty:
-        fig_hist = px.line(historical_data, x='date', y=feature_selected,
-                           title=f'Historical {feature_selected}')
+        fig_hist = go.Figure()
+        fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[feature_selected],
+                                      mode='lines',
+                                      name=f'Historical {feature_selected}'))
+        fig_hist.update_layout(
+            title=f'Historical {feature_selected}',
+            xaxis_title='Date',
+            yaxis_title=feature_selected,
+            template='plotly_white'  # Change template to a light theme
+        )
         st.plotly_chart(fig_hist)
 
     # Future data visualization
     st.header('6 Months Data With Forecast')
     future_data = get_future_data(engine, feature_selected)
     if not future_data.empty:
-        fig_future = px.line(future_data, x='date', y=feature_selected,
-                             title=f'Projected {feature_selected}')
+        fig_future = go.Figure()
+        fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[feature_selected],
+                                        mode='lines',
+                                        name=f'Projected {feature_selected}'))
+        fig_future.update_layout(
+            title=f'Projected {feature_selected}',
+            xaxis_title='Date',
+            yaxis_title=feature_selected,
+            template='plotly_white'  # Change template to a light theme
+        )
         st.plotly_chart(fig_future)
 
     # Irrigation needs visualization
     st.header('Irrigation Needs')
     irrigation_needs = get_irrigation_needs(engine, crop_selected)
     if not irrigation_needs.empty:
-        # Convert the date column to datetime
-        irrigation_needs['date'] = pd.to_datetime(irrigation_needs['date'])
-
         fig_irrigation_needs = plot_irrigation_needs(irrigation_needs, crop_selected)
         st.plotly_chart(fig_irrigation_needs)
         st.write("Irrigation Needs Data Shape:", irrigation_needs.shape)
         st.write(irrigation_needs)
-        
-        # Add Alerts
-        st.subheader("Irrigation Alerts")
-        today = datetime.today().date()
-        tomorrow = today + timedelta(days=1)
-        for index, row in irrigation_needs.iterrows():
-            irrigation_date = row['date'].date()
-            if irrigation_date == today or irrigation_date == tomorrow:
-                if row['irrigation_amount_mm'] > 0:
-                    st.warning(f"Irrigation needed on {irrigation_date}: {row['irrigation_amount_mm']} mm of water required")
-                else:
-                    st.success(f"No irrigation needed on {irrigation_date}")
+
+    # Irrigation alerts for today and tomorrow
+    st.subheader("Irrigation Alerts")
+    today = datetime.now().date()
+    tomorrow = today + timedelta(days=1)
+    for index, row in irrigation_needs.iterrows():
+        if row['date'].date() in [today, tomorrow]:
+            if row['irrigation_amount_mm'] > 0:
+                st.warning(f"Irrigation needed on {row['date'].date()}: {row['irrigation_amount_mm']} mm of water required")
+            else:
+                st.success(f"No irrigation needed on {row['date'].date()}")
 
 # Run the Streamlit app
 if __name__ == '__main__':
