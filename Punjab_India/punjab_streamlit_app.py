@@ -71,7 +71,7 @@ def main():
     feature_selected = st.sidebar.selectbox('Select Feature', [
         'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
         'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
-        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
+        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2',
         'soil_moisture_lag1'
     ])
 
@@ -99,6 +99,14 @@ def main():
         st.plotly_chart(fig_irrigation_needs)
         st.write("Irrigation Needs Data Shape:", irrigation_needs.shape)
         st.write(irrigation_needs)
+        
+        # Add Alerts
+        st.subheader("Irrigation Alerts")
+        for index, row in irrigation_needs.iterrows():
+            if row['irrigation_amount_mm'] > 0:
+                st.warning(f"Irrigation needed on {row['date'].date()}: {row['irrigation_amount_mm']} mm of water required")
+            else:
+                st.success(f"No irrigation needed on {row['date'].date()}")
 
 # Run the Streamlit app
 if __name__ == '__main__':
