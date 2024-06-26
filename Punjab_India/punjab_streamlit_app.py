@@ -174,7 +174,7 @@ def main():
         st.header(f"{crop_selected} Crop Details")
         crop_details = get_crop_details(engine, crop_selected)
         if not crop_details.empty:
-            st.dataframe(crop_details, width=1200)
+            st.dataframe(crop_details, width=1000)
         else:
             st.warning("No crop details available.")
 
