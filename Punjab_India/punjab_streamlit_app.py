@@ -13,9 +13,9 @@ def get_connection():
         st.error("Database URL not found. Please set it in Streamlit secrets.")
         return None
 
-# Function to fetch historical data for a specific feature within a date range
-def get_historical_data(engine, feature, start_date, end_date):
-    query = f"SELECT date, {feature} FROM Historical_Data WHERE date BETWEEN '{start_date}' AND '{end_date}';"
+# Function to fetch historical data for a specific feature
+def get_historical_data(engine, feature):
+    query = f"SELECT date, {feature} FROM Historical_Data;"
     try:
         df = pd.read_sql_query(query, engine)
         if df.empty:
@@ -91,21 +91,18 @@ def main():
         'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
     ])
 
-    # Date range selection for historical data
-    st.sidebar.subheader('Historical Data Date Range')
-    start_date = st.sidebar.date_input("Start Date", value=pd.to_datetime('2010-01-01'))
-    end_date = st.sidebar.date_input("End Date", value=pd.Timestamp.today())
-
     # Tabs for different sections
-    tab1, tab2 = st.columns([1, 1])
+    tab1, tab2 = st.tabs(["Data Visualization", "Crop Details"])
 
     with tab1:
         # Historical data visualization
-        st.header('Historical Data Visualization')
-
-        # Fetch historical data based on selected date range
-        historical_data = get_historical_data(engine, feature_selected, start_date, end_date)
+        st.header('4 Years Historical Data')
+        historical_data = get_historical_data(engine, feature_selected)
         if not historical_data.empty:
+            # Check for duplicate dates
+            if historical_data.duplicated(subset='date').any():
+                st.warning("Duplicate dates found in historical data.")
+
             # Ensure the date column is datetime type
             historical_data['date'] = pd.to_datetime(historical_data['date'])
 
@@ -125,9 +122,6 @@ def main():
             )
             st.plotly_chart(fig_hist)
 
-    with tab2:
-        # Your existing code for future data, irrigation needs, and crop details
-        st.header('Other Sections')
         # Future data visualization
         st.header('6 Months Data With Forecast')
         future_data = get_future_data(engine, feature_selected)
@@ -175,15 +169,15 @@ def main():
                 else:
                     st.success(f"No irrigation needed on {row['date'].date()}")
 
-    # Crop details
-    st.header(f"{crop_selected} Crop Details")
-    crop_details = get_crop_details(engine, crop_selected)
-    if not crop_details.empty:
-        st.dataframe(crop_details, width=1000)
-    else:
-        st.warning("No crop details available.")
+    with tab2:
+        # Crop details
+        st.header(f"{crop_selected} Crop Details")
+        crop_details = get_crop_details(engine, crop_selected)
+        if not crop_details.empty:
+            st.dataframe(crop_details, width=1000)
+        else:
+            st.warning("No crop details available.")
 
 # Run the Streamlit app
 if __name__ == '__main__':
     main()
-
