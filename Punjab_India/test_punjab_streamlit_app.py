@@ -234,7 +234,7 @@ def main():
 def get_soil_moisture_data(future_data, date):
     try:
         # Filter data for the selected date
-        soil_moisture_data = future_data[future_data['date'] == date][['date', 'soil_moisture']].reset_index(drop=True)
+        soil_moisture_data = future_data[future_data['date'] == date][['date', 'soil_moisture_28_to_100cm_m3m3']].reset_index(drop=True)
         
         if soil_moisture_data.empty:
             st.warning(f"No soil moisture data found for date: {date}")
