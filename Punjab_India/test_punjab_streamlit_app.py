@@ -82,6 +82,10 @@ def plot_stacked_bar_chart(soil_moisture_data, irrigation_needs_data):
         st.error("The required columns 'date' and 'irrigation_amount_mm' are not present in the irrigation needs data.")
         return None
 
+    # Convert 'date' columns to datetime if they are not already
+    soil_moisture_data['date'] = pd.to_datetime(soil_moisture_data['date'])
+    irrigation_needs_data['date'] = pd.to_datetime(irrigation_needs_data['date'])
+
     # Merge the two dataframes on the 'date' column
     merged_data = pd.merge(soil_moisture_data, irrigation_needs_data, on='date')
 
@@ -202,13 +206,12 @@ def main():
                 else:
                     st.success(f"No irrigation needed on {row['date'].date()}")
 
-        # Stacked bar chart visualization
-        st.header('Soil Moisture and Irrigation Needs')
-        soil_moisture_data = get_soil_moisture_data(engine)
-        if not soil_moisture_data.empty and not irrigation_needs.empty:
-            fig_stacked_bar = plot_stacked_bar_chart(soil_moisture_data, irrigation_needs)
-            if fig_stacked_bar:
-                st.plotly_chart(fig_stacked_bar)
+            # Stacked bar chart for soil moisture and irrigation needs
+            soil_moisture_data = get_soil_moisture_data(engine)
+            if not soil_moisture_data.empty and not irrigation_needs.empty:
+                fig_stacked_bar = plot_stacked_bar_chart(soil_moisture_data, irrigation_needs)
+                if fig_stacked_bar:
+                    st.plotly_chart(fig_stacked_bar)
 
     with tab2:
         # Crop details
