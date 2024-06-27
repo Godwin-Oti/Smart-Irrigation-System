@@ -2,7 +2,6 @@ import streamlit as st
 from sqlalchemy import create_engine
 import pandas as pd
 import plotly.graph_objects as go
-import numpy as np  # Import numpy for generating mock data
 
 # Function to connect to the Database
 def get_connection():
@@ -28,7 +27,7 @@ def get_historical_data(engine, feature):
 
 # Function to fetch future data for a specific feature
 def get_future_data(engine, feature):
-    query = f"SELECT date, {feature} FROM Present_with_forecast;"
+    query = f"SELECT date, {feature} FROM present_with_forecast;"
     try:
         df = pd.read_sql_query(query, engine)
         if df.empty:
@@ -92,7 +91,7 @@ def merge_soil_moisture_irrigation(soil_moisture_data, irrigation_needs_data):
 def plot_stacked_bar_chart(data):
     try:
         fig = go.Figure()
-        fig.add_trace(go.Bar(x=data['date'], y=data['soil_moisture'], name='Soil Moisture'))
+        fig.add_trace(go.Bar(x=data['date'], y=data['soil_moisture_28_to_100cm_m3m3'], name='Soil Moisture'))
         fig.add_trace(go.Bar(x=data['date'], y=data['irrigation_amount_mm'], name='Irrigation Amount'))
 
         fig.update_layout(barmode='stack', title='Soil Moisture and Irrigation Amount Over Time',
