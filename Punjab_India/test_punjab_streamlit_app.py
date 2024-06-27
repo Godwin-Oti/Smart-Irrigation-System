@@ -49,18 +49,6 @@ def get_irrigation_needs(engine, crop):
         st.error(f"Error fetching irrigation needs data: {str(e)}")
         return pd.DataFrame()
 
-# Function to fetch soil moisture data
-def get_soil_moisture_data(engine):
-    query = "SELECT date, soil_moisture_28_to_100cm_m3m3 FROM Historical_Data;"
-    try:
-        df = pd.read_sql_query(query, engine)
-        if df.empty:
-            st.warning("No soil moisture data found.")
-        return df
-    except Exception as e:
-        st.error(f"Error fetching soil moisture data: {str(e)}")
-        return pd.DataFrame()
-
 # Function to create a line chart for irrigation needs
 def plot_irrigation_needs(data, crop):
     if 'date' not in data.columns or 'irrigation_amount_mm' not in data.columns:
@@ -70,31 +58,6 @@ def plot_irrigation_needs(data, crop):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=data['date'], y=data['irrigation_amount_mm'], mode='lines', name=f'Irrigation Needs for {crop}'))
     fig.update_layout(title=f'Irrigation Needs Over Time for {crop}', xaxis_title='Date', yaxis_title='Irrigation Amount (mm)', template='plotly_white')
-    return fig
-
-# Function to plot stacked bar chart for soil moisture and irrigation needs
-def plot_stacked_bar_chart(soil_moisture_data, irrigation_needs_data):
-    if 'date' not in soil_moisture_data.columns or 'soil_moisture_28_to_100cm_m3m3' not in soil_moisture_data.columns:
-        st.error("The required columns 'date' and 'soil_moisture_28_to_100cm_m3m3' are not present in the soil moisture data.")
-        return None
-
-    if 'date' not in irrigation_needs_data.columns or 'irrigation_amount_mm' not in irrigation_needs_data.columns:
-        st.error("The required columns 'date' and 'irrigation_amount_mm' are not present in the irrigation needs data.")
-        return None
-
-    # Convert 'date' columns to datetime if they are not already
-    soil_moisture_data['date'] = pd.to_datetime(soil_moisture_data['date'])
-    irrigation_needs_data['date'] = pd.to_datetime(irrigation_needs_data['date'])
-
-    # Merge the two dataframes on the 'date' column
-    merged_data = pd.merge(soil_moisture_data, irrigation_needs_data, on='date')
-
-    # Plot the stacked bar chart
-    fig = go.Figure(data=[
-        go.Bar(name='Soil Moisture', x=merged_data['date'], y=merged_data['soil_moisture_28_to_100cm_m3m3']),
-        go.Bar(name='Irrigation Needs', x=merged_data['date'], y=merged_data['irrigation_amount_mm'])
-    ])
-    fig.update_layout(barmode='stack', title='Soil Moisture and Irrigation Needs Over Time', xaxis_title='Date', yaxis_title='Values', template='plotly_white')
     return fig
 
 # Function to fetch crop details
@@ -108,6 +71,36 @@ def get_crop_details(engine, crop):
     except Exception as e:
         st.error(f"Error fetching crop details: {str(e)}")
         return pd.DataFrame()
+
+# Function to merge soil moisture and irrigation needs data
+def merge_soil_moisture_irrigation(soil_moisture_data, irrigation_needs_data):
+    try:
+        # Ensure 'date' column is datetime type
+        soil_moisture_data['date'] = pd.to_datetime(soil_moisture_data['date'])
+        irrigation_needs_data['date'] = pd.to_datetime(irrigation_needs_data['date'])
+
+        # Merge on 'date' column
+        merged_data = pd.merge(soil_moisture_data, irrigation_needs_data, on='date')
+
+        return merged_data
+    except Exception as e:
+        st.error(f"Error merging data: {str(e)}")
+        return pd.DataFrame()
+
+# Function to plot stacked bar chart
+def plot_stacked_bar_chart(data):
+    try:
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=data['date'], y=data['soil_moisture'], name='Soil Moisture'))
+        fig.add_trace(go.Bar(x=data['date'], y=data['irrigation_amount_mm'], name='Irrigation Amount'))
+
+        fig.update_layout(barmode='stack', title='Soil Moisture and Irrigation Amount Over Time',
+                          xaxis_title='Date', yaxis_title='Amount', template='plotly_white')
+
+        return fig
+    except Exception as e:
+        st.error(f"Error plotting stacked bar chart: {str(e)}")
+        return None
 
 # Main Streamlit app
 def main():
@@ -206,13 +199,6 @@ def main():
                 else:
                     st.success(f"No irrigation needed on {row['date'].date()}")
 
-            # Stacked bar chart for soil moisture and irrigation needs
-            soil_moisture_data = get_soil_moisture_data(engine)
-            if not soil_moisture_data.empty and not irrigation_needs.empty:
-                fig_stacked_bar = plot_stacked_bar_chart(soil_moisture_data, irrigation_needs)
-                if fig_stacked_bar:
-                    st.plotly_chart(fig_stacked_bar)
-
     with tab2:
         # Crop details
         st.header(f"{crop_selected} Crop Details")
@@ -221,6 +207,50 @@ def main():
             st.dataframe(crop_details, width=1000)
         else:
             st.warning("No crop details available.")
+
+    # Additional section for stacked bar chart
+    st.header('Soil Moisture and Irrigation Amount Stacked Bar Chart')
+
+    # Fetch soil moisture data
+    soil_moisture_data = get_soil_moisture_data(engine, crop_selected)
+
+    # Fetch irrigation needs data
+    irrigation_needs_data = get_irrigation_needs(engine, crop_selected)
+
+    # Merge soil moisture and irrigation needs data
+    merged_data = merge_soil_moisture_irrigation(soil_moisture_data, irrigation_needs_data)
+
+    if not merged_data.empty:
+        # Plot stacked bar chart
+        fig_stacked_bar = plot_stacked_bar_chart(merged_data)
+        if fig_stacked_bar:
+            st.plotly_chart(fig_stacked_bar)
+    else:
+        st.warning("No data available to plot the stacked bar chart.")
+
+# Function to fetch current soil moisture data for a specific date
+def get_soil_moisture_data(engine, date):
+    query = f"SELECT date, soil_moisture FROM Soil_Moisture_Data WHERE date = '{date}';"
+    try:
+        df = pd.read_sql_query(query, engine)
+        if df.empty:
+            st.warning(f"No soil moisture data found for date: {date}")
+        return df
+    except Exception as e:
+        st.error(f"Error fetching soil moisture data: {str(e)}")
+        return pd.DataFrame()
+
+# Function to fetch irrigation needs data for a specific date
+def get_irrigation_needs_data(engine, date):
+    query = f"SELECT date, irrigation_amount_mm FROM Irrigation_Needs_Data WHERE date = '{date}';"
+    try:
+        df = pd.read_sql_query(query, engine)
+        if df.empty:
+            st.warning(f"No irrigation needs data found for date: {date}")
+        return df
+    except Exception as e:
+        st.error(f"Error fetching irrigation needs data: {str(e)}")
+        return pd.DataFrame()
 
 # Run the Streamlit app
 if __name__ == '__main__':
