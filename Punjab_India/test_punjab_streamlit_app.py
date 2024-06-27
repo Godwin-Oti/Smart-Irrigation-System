@@ -74,6 +74,13 @@ def get_crop_details(engine, crop):
         st.error(f"Error fetching crop details: {str(e)}")
         return pd.DataFrame()
 
+# Function for date range selection in historical data visualization
+def filter_date_range(data, start_date=None, end_date=None):
+    if start_date and end_date:
+        return data[(data['date'] >= start_date) & (data['date'] <= end_date)]
+    else:
+        return data
+
 # Main Streamlit app
 def main():
     st.title('Environmental Condition & Crop Irrigation Dashboard')
@@ -100,6 +107,11 @@ def main():
         'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
     ])
 
+    # Date range selection for historical data
+    st.sidebar.header('Select Date Range for Historical Data')
+    start_date = st.sidebar.date_input('Start date', value=pd.to_datetime('2020-01-01'))
+    end_date = st.sidebar.date_input('End date', value=pd.to_datetime('2023-12-31'))
+
     # Tabs for different sections
     tab1, tab2 = st.tabs(["Data Visualization", "Crop Details"])
 
@@ -109,6 +121,7 @@ def main():
         historical_data = get_historical_data(engine, feature_selected)
         if not historical_data.empty:
             historical_data['date'] = pd.to_datetime(historical_data['date'])
+            historical_data = filter_date_range(historical_data, start_date, end_date)
             historical_data = historical_data.sort_values(by='date')
             fig_hist = go.Figure()
             fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[feature_selected], mode='lines', name=f'Historical {feature_selected}'))
