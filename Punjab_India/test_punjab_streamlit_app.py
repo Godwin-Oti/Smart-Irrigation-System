@@ -2,6 +2,8 @@ import streamlit as st
 from sqlalchemy import create_engine
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
+import datetime
 
 # Function to connect to the Database
 def get_connection():
@@ -81,6 +83,13 @@ def main():
     if engine is None:
         return
 
+    # Overview section
+    st.subheader('Current Conditions Overview')
+    current_conditions = get_historical_data(engine, 'temperature_2m_c').tail(1)  # Fetch latest data point
+    if not current_conditions.empty:
+        current_temp = current_conditions['temperature_2m_c'].values[0]
+        st.metric(label="Current Temperature (°C)", value=f"{current_temp:.2f}")
+    
     # Sidebar for crop selection
     crop_selected = st.sidebar.selectbox('Select Crop', ['Wheat', 'Rice', 'Maize', 'Sugarcane', 'Cotton', 'Barley', 'Potatoes', 'Pulses'])
 
@@ -99,60 +108,40 @@ def main():
         st.header('4 Years Historical Data')
         historical_data = get_historical_data(engine, feature_selected)
         if not historical_data.empty:
-            # Check for duplicate dates
-            if historical_data.duplicated(subset='date').any():
-                st.warning("Duplicate dates found in historical data.")
-
-            # Ensure the date column is datetime type
             historical_data['date'] = pd.to_datetime(historical_data['date'])
-
-            # Sort data by date
             historical_data = historical_data.sort_values(by='date')
-
-            # Plot the historical data
             fig_hist = go.Figure()
-            fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[feature_selected],
-                                          mode='lines',
-                                          name=f'Historical {feature_selected}'))
-            fig_hist.update_layout(
-                title=f'Historical {feature_selected}',
-                xaxis_title='Date',
-                yaxis_title=feature_selected,
-                template='plotly_white'
-            )
+            fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[feature_selected], mode='lines', name=f'Historical {feature_selected}'))
+            fig_hist.update_layout(title=f'Historical {feature_selected}', xaxis_title='Date', yaxis_title=feature_selected, template='plotly_white')
             st.plotly_chart(fig_hist)
+
+            # Heatmap
+            st.header('Historical Data Heatmap')
+            fig_heatmap = px.imshow(historical_data.set_index('date').transpose(), aspect='auto', color_continuous_scale='RdYlBu', title=f'Heatmap of {feature_selected} Over Time')
+            st.plotly_chart(fig_heatmap)
 
         # Future data visualization
         st.header('6 Months Data With Forecast')
         future_data = get_future_data(engine, feature_selected)
         if not future_data.empty:
-            # Ensure the date column is datetime type
             future_data['date'] = pd.to_datetime(future_data['date'])
-
-            # Sort data by date
             future_data = future_data.sort_values(by='date')
-
-            # Plot the future data
             fig_future = go.Figure()
-            fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[feature_selected],
-                                            mode='lines',
-                                            name=f'Projected {feature_selected}'))
-            fig_future.update_layout(
-                title=f'Projected {feature_selected}',
-                xaxis_title='Date',
-                yaxis_title=feature_selected,
-                template='plotly_white'
-            )
+            fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[feature_selected], mode='lines', name=f'Projected {feature_selected}'))
+            fig_future.update_layout(title=f'Projected {feature_selected}', xaxis_title='Date', yaxis_title=feature_selected, template='plotly_white')
             st.plotly_chart(fig_future)
+
+            # Comparison with historical data
+            st.header('Historical vs Projected Data')
+            combined_data = pd.concat([historical_data, future_data], keys=['Historical', 'Projected']).reset_index(level=0)
+            fig_comparison = px.line(combined_data, x='date', y=feature_selected, color='level_0', title=f'Comparison of Historical and Projected {feature_selected}')
+            st.plotly_chart(fig_comparison)
 
         # Irrigation needs visualization
         st.header('Irrigation Needs')
         irrigation_needs = get_irrigation_needs(engine, crop_selected)
         if not irrigation_needs.empty:
-            # Ensure the date column is datetime type
             irrigation_needs['date'] = pd.to_datetime(irrigation_needs['date'])
-
-            # Plot irrigation needs
             fig_irrigation_needs = plot_irrigation_needs(irrigation_needs, crop_selected)
             if fig_irrigation_needs:
                 st.plotly_chart(fig_irrigation_needs)
@@ -174,11 +163,14 @@ def main():
         st.header(f"{crop_selected} Crop Details")
         crop_details = get_crop_details(engine, crop_selected)
         if not crop_details.empty:
-            st.dataframe(crop_details, width=1000)
+            st.dataframe(crop_details, width=1200)
+            st.write(f"Optimal growing conditions for {crop_selected}:")
+            st.write(f"- Temperature: {crop_details['optimal_temperature_min'].values[0]}°C to {crop_details['optimal_temperature_max'].values[0]}°C")
+            st.write(f"- Humidity: {crop_details['optimal_humidity_min'].values[0]}% to {crop_details['optimal_humidity_max'].values[0]}%")
+            st.write(f"- Soil Moisture: {crop_details['optimal_soil_moisture_min'].values[0]} m³/m³ to {crop_details['optimal_soil_moisture_max'].values[0]} m³/m³")
         else:
             st.warning("No crop details available.")
 
 # Run the Streamlit app
 if __name__ == '__main__':
     main()
-
