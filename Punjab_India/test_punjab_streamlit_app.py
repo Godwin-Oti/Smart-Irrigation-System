@@ -2,6 +2,7 @@ import streamlit as st
 from sqlalchemy import create_engine
 import pandas as pd
 import plotly.graph_objects as go
+import numpy as np  # Import numpy for generating mock data
 
 # Function to connect to the Database
 def get_connection():
@@ -211,8 +212,9 @@ def main():
     # Additional section for stacked bar chart
     st.header('Soil Moisture and Irrigation Amount Stacked Bar Chart')
 
-    # Fetch soil moisture data
-    soil_moisture_data = get_soil_moisture_data(engine, crop_selected)
+    # Fetch soil moisture data from future_data
+    selected_date = st.sidebar.date_input('Select Date', pd.Timestamp('today').normalize())  # Default to today
+    soil_moisture_data = get_soil_moisture_data(future_data, selected_date)
 
     # Fetch irrigation needs data
     irrigation_needs_data = get_irrigation_needs(engine, crop_selected)
@@ -228,28 +230,18 @@ def main():
     else:
         st.warning("No data available to plot the stacked bar chart.")
 
-# Function to fetch current soil moisture data for a specific date
-def get_soil_moisture_data(engine, date):
-    query = f"SELECT date, soil_moisture FROM Soil_Moisture_Data WHERE date = '{date}';"
+# Function to fetch current soil moisture data for a specific date from future_data
+def get_soil_moisture_data(future_data, date):
     try:
-        df = pd.read_sql_query(query, engine)
-        if df.empty:
+        # Filter data for the selected date
+        soil_moisture_data = future_data[future_data['date'] == date][['date', 'soil_moisture']].reset_index(drop=True)
+        
+        if soil_moisture_data.empty:
             st.warning(f"No soil moisture data found for date: {date}")
-        return df
+        return soil_moisture_data
+    
     except Exception as e:
         st.error(f"Error fetching soil moisture data: {str(e)}")
-        return pd.DataFrame()
-
-# Function to fetch irrigation needs data for a specific date
-def get_irrigation_needs_data(engine, date):
-    query = f"SELECT date, irrigation_amount_mm FROM Irrigation_Needs_Data WHERE date = '{date}';"
-    try:
-        df = pd.read_sql_query(query, engine)
-        if df.empty:
-            st.warning(f"No irrigation needs data found for date: {date}")
-        return df
-    except Exception as e:
-        st.error(f"Error fetching irrigation needs data: {str(e)}")
         return pd.DataFrame()
 
 # Run the Streamlit app
