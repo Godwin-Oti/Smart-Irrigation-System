@@ -2,22 +2,9 @@ import streamlit as st
 from sqlalchemy import create_engine
 import pandas as pd
 import plotly.graph_objects as go
+from datetime import datetime, timedelta
 
-# Initialize session state for page navigation and feature selection
-if 'page' not in st.session_state:
-    st.session_state.page = 0
-if 'feature_selected' not in st.session_state:
-    st.session_state.feature_selected = 'temperature_2m_c'  # Default feature selection
-
-# Function to move to the next page
-def next_page():
-    st.session_state.page += 1
-
-# Function to go back to the previous page
-def prev_page():
-    st.session_state.page -= 1
-
-# Connect to PostgreSQL database
+# Function to connect to the Database
 def get_connection():
     try:
         DATABASE_URL = st.secrets["DATABASE_URL"]
@@ -27,25 +14,25 @@ def get_connection():
         st.error("Database URL not found. Please set it in Streamlit secrets.")
         return None
 
-# Function to fetch historical data for a specific feature
-def get_historical_data(engine, feature):
-    query = f"SELECT date, {feature} FROM Historical_Data;"
+# Function to fetch historical data for a specific feature within a date range
+def get_historical_data(engine, feature, start_date, end_date):
+    query = f"SELECT date, {feature} FROM Historical_Data WHERE date BETWEEN '{start_date}' AND '{end_date}';"
     try:
         df = pd.read_sql_query(query, engine)
         if df.empty:
-            st.warning(f"No historical data found for feature: {feature}")
+            st.warning(f"No historical data found for feature: {feature} between {start_date} and {end_date}")
         return df
     except Exception as e:
         st.error(f"Error fetching historical data: {str(e)}")
         return pd.DataFrame()
 
-# Function to fetch future data for a specific feature
-def get_future_data(engine, feature):
-    query = f"SELECT date, {feature} FROM Present_with_forecast;"
+# Function to fetch future data for a specific feature within a date range
+def get_future_data(engine, feature, start_date, end_date):
+    query = f"SELECT date, {feature} FROM Present_with_forecast WHERE date BETWEEN '{start_date}' AND '{end_date}';"
     try:
         df = pd.read_sql_query(query, engine)
         if df.empty:
-            st.warning(f"No future data found for feature: {feature}")
+            st.warning(f"No future data found for feature: {feature} between {start_date} and {end_date}")
         return df
     except Exception as e:
         st.error(f"Error fetching future data: {str(e)}")
@@ -86,69 +73,6 @@ def get_crop_details(engine, crop):
         st.error(f"Error fetching crop details: {str(e)}")
         return pd.DataFrame()
 
-# Function to visualize historical and future data
-def visualize_data(engine, feature_selected):
-    st.header('Historical and Future Data')
-
-    st.subheader('Select Feature for Data Visualization')
-    st.session_state.feature_selected = st.selectbox('Select Feature', [
-        'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
-        'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
-        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
-    ], index=[i for i, f in enumerate([
-        'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
-        'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
-        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
-    ]) if f == st.session_state.feature_selected][0])
-
-    st.subheader('4 Years Historical Data')
-    historical_data = get_historical_data(engine, st.session_state.feature_selected)
-    if not historical_data.empty:
-        # Check for duplicate dates
-        if historical_data.duplicated(subset='date').any():
-            st.warning("Duplicate dates found in historical data.")
-
-        # Ensure the date column is datetime type
-        historical_data['date'] = pd.to_datetime(historical_data['date'])
-
-        # Sort data by date
-        historical_data = historical_data.sort_values(by='date')
-
-        # Plot the historical data
-        fig_hist = go.Figure()
-        fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[st.session_state.feature_selected],
-                                      mode='lines',
-                                      name=f'Historical {st.session_state.feature_selected}'))
-        fig_hist.update_layout(
-            title=f'Historical {st.session_state.feature_selected}',
-            xaxis_title='Date',
-            yaxis_title=st.session_state.feature_selected,
-            template='plotly_white'
-        )
-        st.plotly_chart(fig_hist)
-
-    st.subheader('6 Months Data With Forecast')
-    future_data = get_future_data(engine, st.session_state.feature_selected)
-    if not future_data.empty:
-        # Ensure the date column is datetime type
-        future_data['date'] = pd.to_datetime(future_data['date'])
-
-        # Sort data by date
-        future_data = future_data.sort_values(by='date')
-
-        # Plot the future data
-        fig_future = go.Figure()
-        fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[st.session_state.feature_selected],
-                                        mode='lines',
-                                        name=f'Projected {st.session_state.feature_selected}'))
-        fig_future.update_layout(
-            title=f'Projected {st.session_state.feature_selected}',
-            xaxis_title='Date',
-            yaxis_title=st.session_state.feature_selected,
-            template='plotly_white'
-        )
-        st.plotly_chart(fig_future)
-
 # Main Streamlit app
 def main():
     st.title('Smart Irrigation App')
@@ -185,13 +109,62 @@ def main():
         4. Check the irrigation needs and alerts for your crop.
         """)
         if st.button('Next'):
-            next_page()
+            st.session_state.page = 1
 
     elif st.session_state.page == 1:
         tabs = st.tabs(["Historical & Future Data", "Crop Details & Irrigation Needs"])
 
         with tabs[0]:
-            visualize_data(engine, st.session_state.feature_selected)
+            st.header('Historical and Future Data')
+
+            # Date range selection
+            start_date = st.date_input('Start date', datetime.today() - timedelta(days=365*4))
+            end_date = st.date_input('End date', datetime.today())
+
+            # Select feature for data visualization
+            feature_selected = st.selectbox('Select Feature', [
+                'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
+                'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
+                'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
+            ])
+
+            st.subheader('4 Years Historical Data')
+            historical_data = get_historical_data(engine, feature_selected, start_date, end_date)
+            if not historical_data.empty:
+                # Ensure the date column is datetime type
+                historical_data['date'] = pd.to_datetime(historical_data['date'])
+
+                # Plot the historical data
+                fig_hist = go.Figure()
+                fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[feature_selected],
+                                              mode='lines',
+                                              name=f'Historical {feature_selected}'))
+                fig_hist.update_layout(
+                    title=f'Historical {feature_selected}',
+                    xaxis_title='Date',
+                    yaxis_title=feature_selected,
+                    template='plotly_white'
+                )
+                st.plotly_chart(fig_hist)
+
+            st.subheader('6 Months Data With Forecast')
+            future_data = get_future_data(engine, feature_selected, start_date, end_date)
+            if not future_data.empty:
+                # Ensure the date column is datetime type
+                future_data['date'] = pd.to_datetime(future_data['date'])
+
+                # Plot the future data
+                fig_future = go.Figure()
+                fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[feature_selected],
+                                                mode='lines',
+                                                name=f'Projected {feature_selected}'))
+                fig_future.update_layout(
+                    title=f'Projected {feature_selected}',
+                    xaxis_title='Date',
+                    yaxis_title=feature_selected,
+                    template='plotly_white'
+                )
+                st.plotly_chart(fig_future)
 
         with tabs[1]:
             st.header('Crop Details and Irrigation Needs')
@@ -225,7 +198,7 @@ def main():
                 st.write(crop_details)
 
         if st.button('Back'):
-            prev_page()
+            st.session_state.page = 0
 
 if __name__ == '__main__':
     main()
