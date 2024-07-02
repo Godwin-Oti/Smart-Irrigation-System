@@ -3,7 +3,21 @@ from sqlalchemy import create_engine
 import pandas as pd
 import plotly.graph_objects as go
 
-# Function to connect to the Database
+# Initialize session state for page navigation and feature selection
+if 'page' not in st.session_state:
+    st.session_state.page = 0
+if 'feature_selected' not in st.session_state:
+    st.session_state.feature_selected = 'temperature_2m_c'  # Default feature selection
+
+# Function to move to the next page
+def next_page():
+    st.session_state.page += 1
+
+# Function to go back to the previous page
+def prev_page():
+    st.session_state.page -= 1
+
+# Connect to PostgreSQL database
 def get_connection():
     try:
         DATABASE_URL = st.secrets["DATABASE_URL"]
@@ -72,33 +86,88 @@ def get_crop_details(engine, crop):
         st.error(f"Error fetching crop details: {str(e)}")
         return pd.DataFrame()
 
+# Function to visualize historical and future data
+def visualize_data(engine, feature_selected):
+    st.header('Historical and Future Data')
+
+    st.subheader('Select Feature for Data Visualization')
+    st.session_state.feature_selected = st.selectbox('Select Feature', [
+        'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
+        'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
+        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
+    ], index=[i for i, f in enumerate([
+        'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
+        'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
+        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
+    ]) if f == st.session_state.feature_selected][0])
+
+    st.subheader('4 Years Historical Data')
+    historical_data = get_historical_data(engine, st.session_state.feature_selected)
+    if not historical_data.empty:
+        # Check for duplicate dates
+        if historical_data.duplicated(subset='date').any():
+            st.warning("Duplicate dates found in historical data.")
+
+        # Ensure the date column is datetime type
+        historical_data['date'] = pd.to_datetime(historical_data['date'])
+
+        # Sort data by date
+        historical_data = historical_data.sort_values(by='date')
+
+        # Plot the historical data
+        fig_hist = go.Figure()
+        fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[st.session_state.feature_selected],
+                                      mode='lines',
+                                      name=f'Historical {st.session_state.feature_selected}'))
+        fig_hist.update_layout(
+            title=f'Historical {st.session_state.feature_selected}',
+            xaxis_title='Date',
+            yaxis_title=st.session_state.feature_selected,
+            template='plotly_white'
+        )
+        st.plotly_chart(fig_hist)
+
+    st.subheader('6 Months Data With Forecast')
+    future_data = get_future_data(engine, st.session_state.feature_selected)
+    if not future_data.empty:
+        # Ensure the date column is datetime type
+        future_data['date'] = pd.to_datetime(future_data['date'])
+
+        # Sort data by date
+        future_data = future_data.sort_values(by='date')
+
+        # Plot the future data
+        fig_future = go.Figure()
+        fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[st.session_state.feature_selected],
+                                        mode='lines',
+                                        name=f'Projected {st.session_state.feature_selected}'))
+        fig_future.update_layout(
+            title=f'Projected {st.session_state.feature_selected}',
+            xaxis_title='Date',
+            yaxis_title=st.session_state.feature_selected,
+            template='plotly_white'
+        )
+        st.plotly_chart(fig_future)
+
 # Main Streamlit app
 def main():
     st.title('Smart Irrigation App')
 
-    # Initialize session state for page navigation and feature selection
+    # Sidebar for crop selection
+    crop_selected = st.sidebar.selectbox('Select Crop', ['Wheat', 'Rice', 'Maize', 'Sugarcane', 'Cotton', 'Barley', 'Potatoes', 'Pulses'])
+
+    # Initialize session state for page navigation
     if 'page' not in st.session_state:
         st.session_state.page = 0
-
-    # Function to move to the next page
-    def next_page():
-        st.session_state.page += 1
-
-    # Function to go back to the previous page
-    def prev_page():
-        st.session_state.page -= 1
 
     # Connect to PostgreSQL database
     engine = get_connection()
     if engine is None:
         return
 
-    # Sidebar for crop selection
-    crop_selected = st.sidebar.selectbox('Select Crop', ['Wheat', 'Rice', 'Maize', 'Sugarcane', 'Cotton', 'Barley', 'Potatoes', 'Pulses'])
-
     if st.session_state.page == 0:
         # Landing page section
-        st.image("Punjab_India/irrigation photo.jpg", use_column_width=True)
+        st.image("https://example.com/landing_page_image.jpg", use_column_width=True)
         st.subheader("Welcome to the Smart Irrigation App")
         st.markdown("""
         This app provides comprehensive data and insights to help you optimize your irrigation practices.
@@ -111,110 +180,49 @@ def main():
 
         ### How It Works:
         1. Select your crop from the sidebar.
-        2. Explore the historical and future data visualizations.
-        3. Check the irrigation needs and alerts for your crop.
+        2. Choose the environmental feature you want to analyze.
+        3. Explore the historical and future data visualizations.
+        4. Check the irrigation needs and alerts for your crop.
         """)
         if st.button('Next'):
             next_page()
 
     elif st.session_state.page == 1:
-        # Data Visualization page
-        st.header('Historical and Future Data')
+        tabs = st.tabs(["Historical & Future Data", "Crop Details & Irrigation Needs"])
 
-        # Select feature for data visualization
-        st.subheader('Select Feature for Data Visualization')
-        selected_feature = st.selectbox('Select Feature', [
-            'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
-            'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
-            'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
-        ], index=None, key='feature_select')
+        with tabs[0]:
+            visualize_data(engine, st.session_state.feature_selected)
 
-        st.session_state.feature_selected = selected_feature  # Update session state
+        with tabs[1]:
+            st.header('Crop Details and Irrigation Needs')
 
-        st.subheader('4 Years Historical Data')
-        historical_data = get_historical_data(engine, selected_feature)
-        if not historical_data.empty:
-            # Check for duplicate dates
-            if historical_data.duplicated(subset='date').any():
-                st.warning("Duplicate dates found in historical data.")
+            st.subheader('Irrigation Needs')
+            irrigation_needs = get_irrigation_needs(engine, crop_selected)
+            if not irrigation_needs.empty:
+                # Ensure the date column is datetime type
+                irrigation_needs['date'] = pd.to_datetime(irrigation_needs['date'])
 
-            # Ensure the date column is datetime type
-            historical_data['date'] = pd.to_datetime(historical_data['date'])
+                # Plot irrigation needs
+                fig_irrigation_needs = plot_irrigation_needs(irrigation_needs, crop_selected)
+                if fig_irrigation_needs:
+                    st.plotly_chart(fig_irrigation_needs)
+                    st.write("Irrigation Needs Data Shape:", irrigation_needs.shape)
+                    st.write(irrigation_needs)
 
-            # Sort data by date
-            historical_data = historical_data.sort_values(by='date')
+                # Irrigation alerts for the present and next day
+                st.subheader("Irrigation Alerts")
+                today = pd.Timestamp('today').normalize()
+                upcoming_days = irrigation_needs[(irrigation_needs['date'] >= today) & (irrigation_needs['date'] <= today + pd.Timedelta(days=1))]
+                for index, row in upcoming_days.iterrows():
+                    if row['irrigation_amount_mm'] > 0:
+                        st.warning(f"Irrigation needed on {row['date'].date()}: {row['irrigation_amount_mm']} mm of water required")
+                    else:
+                        st.success(f"No irrigation needed on {row['date'].date()}")
 
-            # Plot the historical data
-            fig_hist = go.Figure()
-            fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[selected_feature],
-                                          mode='lines',
-                                          name=f'Historical {selected_feature}'))
-            fig_hist.update_layout(
-                title=f'Historical {selected_feature}',
-                xaxis_title='Date',
-                yaxis_title=selected_feature,
-                template='plotly_white'
-            )
-            st.plotly_chart(fig_hist)
-
-        st.subheader('6 Months Data With Forecast')
-        future_data = get_future_data(engine, selected_feature)
-        if not future_data.empty:
-            # Ensure the date column is datetime type
-            future_data['date'] = pd.to_datetime(future_data['date'])
-
-            # Sort data by date
-            future_data = future_data.sort_values(by='date')
-
-            # Plot the future data
-            fig_future = go.Figure()
-            fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[selected_feature],
-                                            mode='lines',
-                                            name=f'Projected {selected_feature}'))
-            fig_future.update_layout(
-                title=f'Projected {selected_feature}',
-                xaxis_title='Date',
-                yaxis_title=selected_feature,
-                template='plotly_white'
-            )
-            st.plotly_chart(fig_future)
-
-        if st.button('Next'):
-            next_page()
-        if st.button('Back'):
-            prev_page()
-
-    elif st.session_state.page == 2:
-        # Crop Details and Irrigation Needs page
-        st.header(f"{crop_selected} Crop Details")
-        crop_details = get_crop_details(engine, crop_selected)
-        if not crop_details.empty:
-            st.write(crop_details)
-        else:
-            st.warning(f"No details found for crop: {crop_selected}")
-
-        st.header('Irrigation Needs')
-        irrigation_needs = get_irrigation_needs(engine, crop_selected)
-        if not irrigation_needs.empty:
-            # Ensure the date column is datetime type
-            irrigation_needs['date'] = pd.to_datetime(irrigation_needs['date'])
-
-            # Plot irrigation needs
-            fig_irrigation_needs = plot_irrigation_needs(irrigation_needs, crop_selected)
-            if fig_irrigation_needs:
-                st.plotly_chart(fig_irrigation_needs)
-                st.write("Irrigation Needs Data Shape:", irrigation_needs.shape)
-                st.write(irrigation_needs)
-
-            # Irrigation alerts for the present and next day
-            st.subheader("Irrigation Alerts")
-            today = pd.Timestamp('today').normalize()
-            upcoming_days = irrigation_needs[(irrigation_needs['date'] >= today) & (irrigation_needs['date'] <= today + pd.Timedelta(days=1))]
-            for index, row in upcoming_days.iterrows():
-                if row['irrigation_amount_mm'] > 0:
-                    st.warning(f"Irrigation needed on {row['date'].date()}: {row['irrigation_amount_mm']} mm of water required")
-                else:
-                    st.success(f"No irrigation needed on {row['date'].date()}")
+            st.subheader('Crop Details')
+            crop_details = get_crop_details(engine, crop_selected)
+            if not crop_details.empty:
+                st.write(crop_details)
 
         if st.button('Back'):
             prev_page()
