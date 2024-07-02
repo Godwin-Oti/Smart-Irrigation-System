@@ -219,7 +219,7 @@ def main():
                     else:
                         st.success(f"No irrigation needed on {row['date'].date()}")
 
-            st.subheader('Crop Details')
+            st.subheader(f"{crop_selected} Crop Details")
             crop_details = get_crop_details(engine, crop_selected)
             if not crop_details.empty:
                 st.write(crop_details)
