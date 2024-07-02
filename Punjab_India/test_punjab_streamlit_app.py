@@ -76,9 +76,10 @@ def get_crop_details(engine, crop):
 def main():
     st.title('Smart Irrigation App')
 
-    # Initialize session state for page navigation
+    # Initialize session state for page navigation and feature selection
     if 'page' not in st.session_state:
         st.session_state.page = 0
+    if 'feature_selected' not in st.session_state:
         st.session_state.feature_selected = 'temperature_2m_c'  # Default feature selection
 
     # Function to move to the next page
