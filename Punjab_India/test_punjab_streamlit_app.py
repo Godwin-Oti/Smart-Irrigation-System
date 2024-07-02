@@ -27,7 +27,7 @@ def get_historical_data(engine, feature):
 
 # Function to fetch future data for a specific feature
 def get_future_data(engine, feature):
-    query = f"SELECT date, {feature} FROM present_with_forecast;"
+    query = f"SELECT date, {feature} FROM Present_with_forecast;"
     try:
         df = pd.read_sql_query(query, engine)
         if df.empty:
@@ -72,39 +72,21 @@ def get_crop_details(engine, crop):
         st.error(f"Error fetching crop details: {str(e)}")
         return pd.DataFrame()
 
-# Function to merge soil moisture and irrigation needs data
-def merge_soil_moisture_irrigation(soil_moisture_data, irrigation_needs_data):
-    try:
-        # Ensure 'date' column is datetime type
-        soil_moisture_data['date'] = pd.to_datetime(soil_moisture_data['date'])
-        irrigation_needs_data['date'] = pd.to_datetime(irrigation_needs_data['date'])
-
-        # Merge on 'date' column
-        merged_data = pd.merge(soil_moisture_data, irrigation_needs_data, on='date')
-
-        return merged_data
-    except Exception as e:
-        st.error(f"Error merging data: {str(e)}")
-        return pd.DataFrame()
-
-# Function to plot stacked bar chart
-def plot_stacked_bar_chart(data):
-    try:
-        fig = go.Figure()
-        fig.add_trace(go.Bar(x=data['date'], y=data['soil_moisture_28_to_100cm_m3m3'], name='Soil Moisture'))
-        fig.add_trace(go.Bar(x=data['date'], y=data['irrigation_amount_mm'], name='Irrigation Amount'))
-
-        fig.update_layout(barmode='stack', title='Soil Moisture and Irrigation Amount Over Time',
-                          xaxis_title='Date', yaxis_title='Amount', template='plotly_white')
-
-        return fig
-    except Exception as e:
-        st.error(f"Error plotting stacked bar chart: {str(e)}")
-        return None
-
 # Main Streamlit app
 def main():
-    st.title('Environmental Condition & Crop Irrigation Dashboard')
+    st.title('Smart Irrigation App')
+
+    # Initialize session state for page navigation
+    if 'page' not in st.session_state:
+        st.session_state.page = 0
+
+    # Function to move to the next page
+    def next_page():
+        st.session_state.page += 1
+
+    # Function to go back to the previous page
+    def prev_page():
+        st.session_state.page -= 1
 
     # Connect to PostgreSQL database
     engine = get_connection()
@@ -121,11 +103,30 @@ def main():
         'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
     ])
 
-    # Tabs for different sections
-    tab1, tab2 = st.tabs(["Data Visualization", "Crop Details"])
+    if st.session_state.page == 0:
+        # Landing page section
+        st.image("https://example.com/landing_page_image.jpg", use_column_width=True)
+        st.subheader("Welcome to the Smart Irrigation App")
+        st.markdown("""
+        This app provides comprehensive data and insights to help you optimize your irrigation practices.
+        
+        ### Features:
+        - *Historical Data Visualization*: Analyze environmental conditions over the past 4 years.
+        - *Future Data Forecast*: Plan ahead with 6 months of projected weather data.
+        - *Irrigation Needs*: Get precise irrigation requirements for your selected crop.
+        - *Crop Details*: Access detailed information about various crops.
 
-    with tab1:
-        # Historical data visualization
+        ### How It Works:
+        1. Select your crop from the sidebar.
+        2. Choose the environmental feature you want to analyze.
+        3. Explore the historical and future data visualizations.
+        4. Check the irrigation needs and alerts for your crop.
+        """)
+        if st.button('Next'):
+            next_page()
+
+    elif st.session_state.page == 1:
+        # Data Visualization page
         st.header('4 Years Historical Data')
         historical_data = get_historical_data(engine, feature_selected)
         if not historical_data.empty:
@@ -152,7 +153,6 @@ def main():
             )
             st.plotly_chart(fig_hist)
 
-        # Future data visualization
         st.header('6 Months Data With Forecast')
         future_data = get_future_data(engine, feature_selected)
         if not future_data.empty:
@@ -175,7 +175,6 @@ def main():
             )
             st.plotly_chart(fig_future)
 
-        # Irrigation needs visualization
         st.header('Irrigation Needs')
         irrigation_needs = get_irrigation_needs(engine, crop_selected)
         if not irrigation_needs.empty:
@@ -199,50 +198,22 @@ def main():
                 else:
                     st.success(f"No irrigation needed on {row['date'].date()}")
 
-    with tab2:
-        # Crop details
+        if st.button('Next'):
+            next_page()
+        if st.button('Back'):
+            prev_page()
+
+    elif st.session_state.page == 2:
+        # Crop Details page
         st.header(f"{crop_selected} Crop Details")
         crop_details = get_crop_details(engine, crop_selected)
         if not crop_details.empty:
-            st.dataframe(crop_details, width=1000)
+            st.write(crop_details)
         else:
-            st.warning("No crop details available.")
+            st.warning(f"No details found for crop: {crop_selected}")
 
-    # Additional section for stacked bar chart
-    st.header('Soil Moisture and Irrigation Amount Stacked Bar Chart')
+        if st.button('Back'):
+            prev_page()
 
-    # Fetch soil moisture data from future_data
-    selected_date = st.sidebar.date_input('Select Date', pd.Timestamp('today').normalize())  # Default to today
-    soil_moisture_data = get_soil_moisture_data(future_data, selected_date)
-
-    # Fetch irrigation needs data
-    irrigation_needs_data = get_irrigation_needs(engine, crop_selected)
-
-    # Merge soil moisture and irrigation needs data
-    merged_data = merge_soil_moisture_irrigation(soil_moisture_data, irrigation_needs_data)
-
-    if not merged_data.empty:
-        # Plot stacked bar chart
-        fig_stacked_bar = plot_stacked_bar_chart(merged_data)
-        if fig_stacked_bar:
-            st.plotly_chart(fig_stacked_bar)
-    else:
-        st.warning("No data available to plot the stacked bar chart.")
-
-# Function to fetch current soil moisture data for a specific date from future_data
-def get_soil_moisture_data(future_data, date):
-    try:
-        # Filter data for the selected date
-        soil_moisture_data = future_data[future_data['date'] == date][['date', 'soil_moisture_28_to_100cm_m3m3']].reset_index(drop=True)
-        
-        if soil_moisture_data.empty:
-            st.warning(f"No soil moisture data found for date: {date}")
-        return soil_moisture_data
-    
-    except Exception as e:
-        st.error(f"Error fetching soil moisture data: {str(e)}")
-        return pd.DataFrame()
-
-# Run the Streamlit app
 if __name__ == '__main__':
     main()
