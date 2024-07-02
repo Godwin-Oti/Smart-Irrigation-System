@@ -173,10 +173,10 @@ def main():
         This app provides comprehensive data and insights to help you optimize your irrigation practices.
         
         ### Features:
-        - *Historical Data Visualization*: Analyze environmental conditions over the past 4 years.
-        - *Future Data Forecast*: Plan ahead with 6 months of projected weather data.
-        - *Irrigation Needs*: Get precise irrigation requirements for your selected crop.
-        - *Crop Details*: Access detailed information about various crops.
+        - Historical Data Visualization: Analyze environmental conditions over the past 4 years.
+        - Future Data Forecast: Plan ahead with 6 months of projected weather data.
+        - Irrigation Needs: Get precise irrigation requirements for your selected crop.
+        - Crop Details: Access detailed information about various crops.
 
         ### How It Works:
         1. Select your crop from the sidebar.
@@ -227,5 +227,5 @@ def main():
         if st.button('Back'):
             prev_page()
 
-if __name__ == '__main__':
+if __name__ == '_main_':
     main()
