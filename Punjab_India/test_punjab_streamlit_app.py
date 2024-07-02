@@ -105,7 +105,7 @@ def main():
 
     if st.session_state.page == 0:
         # Landing page section
-        st.image("https://example.com/landing_page_image.jpg", use_column_width=True)
+        st.image("C:\Desktop\Smart Irrigation System\Punjab_India\irrigation photo.jpg", use_column_width=True)
         st.subheader("Welcome to the Smart Irrigation App")
         st.markdown("""
         This app provides comprehensive data and insights to help you optimize your irrigation practices.
@@ -175,6 +175,20 @@ def main():
             )
             st.plotly_chart(fig_future)
 
+        if st.button('Next'):
+            next_page()
+        if st.button('Back'):
+            prev_page()
+
+    elif st.session_state.page == 2:
+        # Crop Details and Irrigation Needs page
+        st.header(f"{crop_selected} Crop Details")
+        crop_details = get_crop_details(engine, crop_selected)
+        if not crop_details.empty:
+            st.write(crop_details)
+        else:
+            st.warning(f"No details found for crop: {crop_selected}")
+
         st.header('Irrigation Needs')
         irrigation_needs = get_irrigation_needs(engine, crop_selected)
         if not irrigation_needs.empty:
@@ -197,20 +211,6 @@ def main():
                     st.warning(f"Irrigation needed on {row['date'].date()}: {row['irrigation_amount_mm']} mm of water required")
                 else:
                     st.success(f"No irrigation needed on {row['date'].date()}")
-
-        if st.button('Next'):
-            next_page()
-        if st.button('Back'):
-            prev_page()
-
-    elif st.session_state.page == 2:
-        # Crop Details page
-        st.header(f"{crop_selected} Crop Details")
-        crop_details = get_crop_details(engine, crop_selected)
-        if not crop_details.empty:
-            st.write(crop_details)
-        else:
-            st.warning(f"No details found for crop: {crop_selected}")
 
         if st.button('Back'):
             prev_page()
