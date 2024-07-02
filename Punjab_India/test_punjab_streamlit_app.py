@@ -96,16 +96,9 @@ def main():
     # Sidebar for crop selection
     crop_selected = st.sidebar.selectbox('Select Crop', ['Wheat', 'Rice', 'Maize', 'Sugarcane', 'Cotton', 'Barley', 'Potatoes', 'Pulses'])
 
-    # Sidebar for selecting data feature
-    feature_selected = st.sidebar.selectbox('Select Feature', [
-        'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
-        'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
-        'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
-    ])
-
     if st.session_state.page == 0:
         # Landing page section
-        st.image("Punjab_India/irrigation photo.jpg", use_column_width=True)
+        st.image("https://example.com/landing_page_image.jpg", use_column_width=True)
         st.subheader("Welcome to the Smart Irrigation App")
         st.markdown("""
         This app provides comprehensive data and insights to help you optimize your irrigation practices.
@@ -127,7 +120,16 @@ def main():
 
     elif st.session_state.page == 1:
         # Data Visualization page
-        st.header('4 Years Historical Data')
+        st.header('Historical and Future Data')
+
+        # Select feature for data visualization
+        feature_selected = st.selectbox('Select Feature', [
+            'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
+            'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
+            'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
+        ])
+
+        st.subheader('4 Years Historical Data')
         historical_data = get_historical_data(engine, feature_selected)
         if not historical_data.empty:
             # Check for duplicate dates
@@ -153,7 +155,7 @@ def main():
             )
             st.plotly_chart(fig_hist)
 
-        st.header('6 Months Data With Forecast')
+        st.subheader('6 Months Data With Forecast')
         future_data = get_future_data(engine, feature_selected)
         if not future_data.empty:
             # Ensure the date column is datetime type
