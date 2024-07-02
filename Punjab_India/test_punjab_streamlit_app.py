@@ -79,8 +79,6 @@ def main():
     # Initialize session state for page navigation and feature selection
     if 'page' not in st.session_state:
         st.session_state.page = 0
-    if 'feature_selected' not in st.session_state:
-        st.session_state.feature_selected = 'temperature_2m_c'  # Default feature selection
 
     # Function to move to the next page
     def next_page():
@@ -125,18 +123,16 @@ def main():
 
         # Select feature for data visualization
         st.subheader('Select Feature for Data Visualization')
-        st.session_state.feature_selected = st.selectbox('Select Feature', [
+        selected_feature = st.selectbox('Select Feature', [
             'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
             'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
             'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
-        ], index=[i for i, f in enumerate([
-            'temperature_2m_c', 'relative_humidity_2m', 'precipitation_mm', 
-            'et₀_mm', 'wind_speed_10m_kmh', 'soil_temperature_28_to_100cm_c', 
-            'soil_moisture_28_to_100cm_m3m3', 'shortwave_radiation_instant_wm2'
-        ]) if f == st.session_state.feature_selected][0])
+        ], index=None, key='feature_select')
+
+        st.session_state.feature_selected = selected_feature  # Update session state
 
         st.subheader('4 Years Historical Data')
-        historical_data = get_historical_data(engine, st.session_state.feature_selected)
+        historical_data = get_historical_data(engine, selected_feature)
         if not historical_data.empty:
             # Check for duplicate dates
             if historical_data.duplicated(subset='date').any():
@@ -150,19 +146,19 @@ def main():
 
             # Plot the historical data
             fig_hist = go.Figure()
-            fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[st.session_state.feature_selected],
+            fig_hist.add_trace(go.Scatter(x=historical_data['date'], y=historical_data[selected_feature],
                                           mode='lines',
-                                          name=f'Historical {st.session_state.feature_selected}'))
+                                          name=f'Historical {selected_feature}'))
             fig_hist.update_layout(
-                title=f'Historical {st.session_state.feature_selected}',
+                title=f'Historical {selected_feature}',
                 xaxis_title='Date',
-                yaxis_title=st.session_state.feature_selected,
+                yaxis_title=selected_feature,
                 template='plotly_white'
             )
             st.plotly_chart(fig_hist)
 
         st.subheader('6 Months Data With Forecast')
-        future_data = get_future_data(engine, st.session_state.feature_selected)
+        future_data = get_future_data(engine, selected_feature)
         if not future_data.empty:
             # Ensure the date column is datetime type
             future_data['date'] = pd.to_datetime(future_data['date'])
@@ -172,13 +168,13 @@ def main():
 
             # Plot the future data
             fig_future = go.Figure()
-            fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[st.session_state.feature_selected],
+            fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[selected_feature],
                                             mode='lines',
-                                            name=f'Projected {st.session_state.feature_selected}'))
+                                            name=f'Projected {selected_feature}'))
             fig_future.update_layout(
-                title=f'Projected {st.session_state.feature_selected}',
+                title=f'Projected {selected_feature}',
                 xaxis_title='Date',
-                yaxis_title=st.session_state.feature_selected,
+                yaxis_title=selected_feature,
                 template='plotly_white'
             )
             st.plotly_chart(fig_future)
