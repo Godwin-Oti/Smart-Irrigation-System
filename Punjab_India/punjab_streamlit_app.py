@@ -136,11 +136,22 @@ def visualize_data(engine, feature_selected):
         # Sort data by date
         future_data = future_data.sort_values(by='date')
 
-        # Plot the future data
+        # Identify the last 14 days
+        last_14_days = future_data['date'].max() - pd.Timedelta(days=14)
+
+        # Plot the future data with last 14 days highlighted
         fig_future = go.Figure()
         fig_future.add_trace(go.Scatter(x=future_data['date'], y=future_data[st.session_state.feature_selected],
-                                        mode='lines',
-                                        name=f'Projected {st.session_state.feature_selected}'))
+                                        mode='lines', name=f'Projected {st.session_state.feature_selected}'))
+
+        # Highlight last 14 days
+        fig_future.add_trace(go.Scatter(
+            x=future_data[future_data['date'] > last_14_days]['date'],
+            y=future_data[future_data['date'] > last_14_days][st.session_state.feature_selected],
+            mode='lines', line=dict(color='red'),
+            name=f'Last 14 Days {st.session_state.feature_selected}'
+        ))
+
         fig_future.update_layout(
             title=f'Projected {st.session_state.feature_selected}',
             xaxis_title='Date',
@@ -173,10 +184,10 @@ def main():
         This app provides comprehensive data and insights to help you optimize your irrigation practices.
         
         ### Features:
-        - Historical Data Visualization: Analyze environmental conditions over the past 4 years.
-        - Future Data Forecast: Plan ahead with 6 months of projected weather data.
-        - Irrigation Needs: Get precise irrigation requirements for your selected crop.
-        - Crop Details: Access detailed information about various crops.
+        - *Historical Data Visualization*: Analyze environmental conditions over the past 4 years.
+        - *Future Data Forecast*: Plan ahead with 6 months of projected weather data.
+        - *Irrigation Needs*: Get precise irrigation requirements for your selected crop.
+        - *Crop Details*: Access detailed information about various crops.
 
         ### How It Works:
         1. Select your crop from the sidebar.
@@ -227,5 +238,5 @@ def main():
         if st.button('Back'):
             prev_page()
 
-if __name__ == '_main_':
+if __name__ == '__main__':
     main()
