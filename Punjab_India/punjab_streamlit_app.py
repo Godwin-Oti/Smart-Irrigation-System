@@ -74,7 +74,28 @@ def get_crop_details(engine, crop):
 
 # Main Streamlit app
 def main():
-    st.title('Environmental Condition & Crop Irrigation Dashboard')
+    st.title('Smart Irrigation App')
+
+    # Landing page section
+    st.image("https://example.com/landing_page_image.jpg", use_column_width=True)
+    st.subheader("Welcome to the Smart Irrigation App")
+    st.markdown("""
+    This app provides comprehensive data and insights to help you optimize your irrigation practices.
+    
+    ### Features:
+    - *Historical Data Visualization*: Analyze environmental conditions over the past 4 years.
+    - *Future Data Forecast*: Plan ahead with 6 months of projected weather data.
+    - *Irrigation Needs*: Get precise irrigation requirements for your selected crop.
+    - *Crop Details*: Access detailed information about various crops.
+
+    ### How It Works:
+    1. Select your crop from the sidebar.
+    2. Choose the environmental feature you want to analyze.
+    3. Explore the historical and future data visualizations.
+    4. Check the irrigation needs and alerts for your crop.
+
+    Start by selecting a crop and a feature from the sidebar!
+    """)
 
     # Connect to PostgreSQL database
     engine = get_connection()
