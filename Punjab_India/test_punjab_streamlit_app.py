@@ -210,7 +210,7 @@ def main():
                     st.write(irrigation_needs)
 
                 # Irrigation alerts for the present and next day
-                st.subheader(f"{crop_selected}Irrigation Alerts")
+                st.subheader(f"{crop_selected} Irrigation Alerts")
                 today = pd.Timestamp('today').normalize()
                 upcoming_days = irrigation_needs[(irrigation_needs['date'] >= today) & (irrigation_needs['date'] <= today + pd.Timedelta(days=1))]
                 for index, row in upcoming_days.iterrows():
