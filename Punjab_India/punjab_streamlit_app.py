@@ -178,7 +178,7 @@ def main():
 
     if st.session_state.page == 0:
         # Landing page section
-        st.image("Punjab_India\water photo.jpg", use_column_width=True)
+        st.image("Punjab_India/water photo.jpg", use_column_width=True)
         st.subheader("Welcome to the Smart Irrigation App")
         st.markdown("""
         This app provides comprehensive data and insights to help you optimize your irrigation practices.
